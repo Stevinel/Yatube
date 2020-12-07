@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}{{ page.0.author.get_full_name }}{% endblock %}
+{% block header %}Профайл пользователя {{ page.0.author.get_full_name }}{% endblock %}
+{% block content %}
+
+{{page.post.user_profile.username}}
+<main role="main" class="container"></main>
+    <div class="row">
+        {% include "profile_info/info.html" with author=user_profile %}
+        <div class="col-md-9"> 
+            {% for post in page %}
+                {% include "post_item.html" with post=post %}
+            {% endfor %}
+        </div>
+
+        {% if page.has_other_pages %}
+            {% include "paginator.html" with items=page paginator=paginator%}
+        {% endif %}
+    </div>
+</main> 
+{% endblock %} 
