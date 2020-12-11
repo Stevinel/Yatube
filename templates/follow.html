@@ -6,7 +6,7 @@
     <h2>Последние обновления на сайте:</h2><br>
     {% include "menu.html" with follow=True %}
         {% for post in page %}
-            {% include "post_item.html" with post=post %}
+            {% include "post_items/post_item.html" with post=post %}
         {% endfor %}
         {% if page.has_other_pages %}
             {% include "paginator.html" with items=page paginator=paginator%}

@@ -9,7 +9,7 @@
         {% include "profile_info/info.html" with author=user_profile %}
         <div class="col-md-9"> 
             {% for post in page %}
-                {% include "post_item.html" with post=post %}
+                {% include "post_items/post_item.html" with post=post %}
             {% endfor %}
         </div>
 

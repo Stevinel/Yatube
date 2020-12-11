@@ -5,7 +5,7 @@
 
 {% for post in page %}
   {% for post in page %}
-    {% include "post_item.html" with post=post %}
+    {% include "post_items/post_item.html" with post=post %}
   {% endfor %}
 {% endfor %}
 {% if page.has_other_pages %}

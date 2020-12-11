@@ -8,19 +8,19 @@
                 <i class="fas fa-user fa-sm"> {{ author.username }}</i>
             </div>
         </div>
-        {% if author != request.user %}
-            {% if is_following %}
-            <a class="btn btn-sm btn btn-secondary" 
-                href="{% url 'profile_unfollow' author.username %}" role="button"> 
-                    Отписаться 
-            </a> 
+            {% if author != request.user %}
+                {% if is_following %}
+                <a class="btn btn-sm btn btn-secondary" 
+                    href="{% url 'profile_unfollow' author.username %}" role="button"> 
+                        Отписаться 
+                </a> 
                 {% else %}
-            <a class="btn btn-sm btn-primary" 
-                href="{% url 'profile_follow' author.username %}" role="button">
-                    Подписаться 
-            </a>
+                <a class="btn btn-sm btn-primary" 
+                    href="{% url 'profile_follow' author.username %}" role="button">
+                        Подписаться 
+                </a>
+                {% endif %}
             {% endif %}
-        {% endif %}
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
                 <div class="h6 text-muted">
@@ -30,7 +30,7 @@
             </li>
             <li class="list-group-item">
                 <div class="h6 text-muted">
-                    Кол-во постов: {{ author.posts.all.count }} 
+                    Кол-во постов: {{ author.posts.count }} 
                 </div>
             </li> 
         </ul>

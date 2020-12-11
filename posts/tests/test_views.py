@@ -1,6 +1,7 @@
 from django import forms
 from django.urls import reverse
 
+from posts.models import Comment, Follow
 from posts.tests.test_settings import TestSettings
 
 
@@ -76,7 +77,6 @@ class PostPagesTests(TestSettings):
         post = response.context["post"]
         self.assertIn("followers", response.context)
         self.assertIn("following", response.context)
-        self.assertIn("is_following", response.context)
         self.assertEqual(post, self.post)
 
     def test_post_edit_page_show_correct_context(self):
@@ -93,3 +93,68 @@ class PostPagesTests(TestSettings):
             response = self.anonymous_client.get(url)
             with self.subTest():
                 self.assertEqual(response.status_code, 200)
+
+    def test_follow_page_show_correct_context(self):
+        """Шаблон new сформирован с правильным контекстом."""
+        response = self.authorized_client.get(reverse("follow_index"))
+        form_fields = {"text": forms.fields.CharField}
+        for name, expected in form_fields.items():
+            with self.subTest(name=name):
+                field_filled = response.context.get("form").fields.get(name)
+                self.assertIsInstance(field_filled, expected)
+
+    def test_only_auth_user_can_add_comments(self):
+        """Авторизированный пользователь может добавлять комментарии"""
+        comments = Comment.objects.count()
+        form_data = {"text": "comment"}
+        self.authorized_client.post(
+            reverse("add_comment", args=[self.user, self.post.id]),
+            data=form_data,
+            follow=True,
+        )
+        self.assertEqual(self.comment.text, form_data["text"])
+        self.assertEqual(Comment.objects.count(), comments + 1)
+
+    def test_not_auth_user_can_add_comments(self):
+        """Невторизированный пользователь не может добавлять комментарии"""
+        form_data = {"text": "коммент"}
+        self.anonymous_client.post(
+            reverse("add_comment", args=[self.user, self.post.id]),
+            data=form_data,
+            follow=True,
+        )
+        comment = Comment.objects.first()
+        self.assertNotEqual(comment.text, form_data["text"])
+
+    def test_auth_user_can_follow_users(self):
+        """Пользователь может подписывать на юзера"""
+        self.authorized_client.post(
+            reverse("profile_follow", args=[self.user2]),
+            follow=True,
+        )
+        self.assertEqual(Follow.objects.count(), 1)
+
+    def test_auth_user_can_unfollow_users(self):
+        """Пользователь может отписывать от юзера"""
+        self.authorized_client.post(
+            reverse("profile_follow", args=[self.user2]),
+            follow=True,
+        )
+        self.assertEqual(Follow.objects.count(), 1)
+        self.authorized_client.post(
+            reverse("profile_unfollow", args=[self.user2]),
+            follow=True,
+        )
+        self.assertEqual(Follow.objects.count(), 0)
+
+    def test_comments_delete(self):
+        """Комментарий удаляется"""
+        comment = Comment.objects.first()
+        self.authorized_client.post(
+            reverse(
+                "del_comment",
+                args=[self.user.username, comment.post.id, comment.id],
+            ),
+            follow=True,
+        )
+        self.assertEqual(Comment.objects.first(), None)

@@ -1,17 +1,13 @@
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
-from django.shortcuts import (
-    get_object_or_404,
-    redirect,
-    render,
-)
+from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.cache import cache_page
 
 from .forms import CommentForm, PostForm
 from .models import Comment, Follow, Group, Post, User
 
 
-@cache_page(10 * 1)
+@cache_page(10)
 def index(request):
     """Функция главной страницы"""
     post_list = Post.objects.all()
@@ -37,7 +33,7 @@ def group_posts(request, slug):
 @login_required
 def new_post(request):
     """Функция страницы создания нового поста"""
-    form = PostForm(request.POST or None)
+    form = PostForm(request.POST or None, files=request.FILES or None)
     if form.is_valid():
         post = form.save(commit=False)
         post.author = request.user
@@ -55,18 +51,21 @@ def profile(request, username):
     """Функция страницы профиля"""
     user_profile = get_object_or_404(User, username=username)
     post = user_profile.posts.all()
-    comments = Comment.objects.filter()
     paginator = Paginator(post, 10)
     page_number = request.GET.get("page")
     page = paginator.get_page(page_number)
-    is_following = Follow.objects.filter(author=user_profile).exists()
-    followers = Follow.objects.filter(author=user_profile).count()
-    following = Follow.objects.filter(user=user_profile).count()
+    is_following = (
+        request.user.is_authenticated
+        and Follow.objects.filter(
+            user=request.user, author=user_profile
+        ).exists()
+    )
+    followers = user_profile.following.count()
+    following = user_profile.follower.count()
     context = {
         "page": page,
         "paginator": paginator,
         "user_profile": user_profile,
-        "comments": comments,
         "followers": followers,
         "following": following,
         "is_following": is_following,
@@ -78,10 +77,9 @@ def post_view(request, username, post_id):
     """Функция страницы поста"""
     user_profile = get_object_or_404(User, username=username)
     post = get_object_or_404(Post, id=post_id, author__username=username)
-    comments = Comment.objects.filter(post_id=post)
-    is_following = Follow.objects.filter(author=user_profile).exists()
-    followers = Follow.objects.filter(author=user_profile).count()
-    following = Follow.objects.filter(user=user_profile).count()
+    comments = post.comments.all()
+    followers = user_profile.follower.count()
+    following = user_profile.following.count()
 
     form = CommentForm(request.POST or None)
     if form.is_valid():
@@ -100,7 +98,6 @@ def post_view(request, username, post_id):
             "comments": comments,
             "followers": followers,
             "following": following,
-            "is_following": is_following,
             "user_profile": user_profile,
         },
     )
@@ -158,10 +155,8 @@ def delete_comment(request, username, post_id, comment_id):
     """Функция удаления комментария юзером"""
     post = get_object_or_404(Post, id=post_id, author__username=username)
     comment = get_object_or_404(Comment, pk=comment_id, post=post)
-
     if comment.author == request.user:
         comment.delete()
-
     return redirect("post", username, post_id)
 
 
@@ -170,9 +165,14 @@ def follow_index(request):
     """Функция страницы подписок"""
     post_list = Post.objects.filter(author__following__user=request.user)
     paginator = Paginator(post_list, 10)
+    form = PostForm()
     page_number = request.GET.get("page")
     page = paginator.get_page(page_number)
-    context = {"page": page, "paginator": paginator}
+    context = {
+        "page": page,
+        "paginator": paginator,
+        "form": form,
+    }
     return render(request, "follow.html", context)
 
 
