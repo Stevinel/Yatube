@@ -1,11 +1,34 @@
 from django import forms
+from django.core.cache import cache
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 
-from posts.models import Comment, Follow
+from posts.models import Comment, Follow, Post
 from posts.tests.test_settings import TestSettings
 
 
 class PostPagesTests(TestSettings):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.small_gif = (
+            b"\x47\x49\x46\x38\x39\x61\x02\x00"
+            b"\x01\x00\x80\x00\x00\x00\x00\x00"
+            b"\xFF\xFF\xFF\x21\xF9\x04\x00\x00"
+            b"\x00\x00\x00\x2C\x00\x00\x00\x00"
+            b"\x02\x00\x01\x00\x00\x02\x02\x0C"
+            b"\x0A\x00\x3B"
+        )
+        cls.uploaded = SimpleUploadedFile(
+            name="small.gif", content=cls.small_gif, content_type="image/gif"
+        )
+        cls.post = Post.objects.create(
+            text="Simple test text",
+            author=cls.user,
+            group=cls.group,
+            image=cls.uploaded,
+        )
+
     def test_pages_uses_correct_template(self):
         """URL-адрес использует соответствующий шаблон."""
         templates_page_names = {
@@ -25,7 +48,8 @@ class PostPagesTests(TestSettings):
     def test_index_page_show_correct_context(self):
         """Шаблон index сформирован с правильным контекстом."""
         response = self.authorized_client.get(reverse("index"))
-        self.assertIn("page", response.context)
+        post = response.context["page"][0]
+        self.assertEqual(post, self.post)
         self.assertEqual(
             response.context["paginator"].page(1).object_list.count(), 10
         )
@@ -63,10 +87,8 @@ class PostPagesTests(TestSettings):
         self.assertIn("page", response.context)
         self.assertIn("user_profile", response.context)
         self.assertEqual(
-            response.context["paginator"].page(2).object_list.count(), 3
+            response.context["paginator"].page(2).object_list.count(), 4
         )
-        self.assertIn("followers", response.context)
-        self.assertIn("following", response.context)
         self.assertIn("is_following", response.context)
 
     def test_post_page_show_correct_context(self):
@@ -75,8 +97,6 @@ class PostPagesTests(TestSettings):
             reverse("post", args=[self.user.username, self.post.id])
         )
         post = response.context["post"]
-        self.assertIn("followers", response.context)
-        self.assertIn("following", response.context)
         self.assertEqual(post, self.post)
 
     def test_post_edit_page_show_correct_context(self):
@@ -106,50 +126,61 @@ class PostPagesTests(TestSettings):
     def test_only_auth_user_can_add_comments(self):
         """Авторизированный пользователь может добавлять комментарии"""
         comments = Comment.objects.count()
-        form_data = {"text": "comment"}
+        form_data = {"text": "Комментик"}
         self.authorized_client.post(
             reverse("add_comment", args=[self.user, self.post.id]),
             data=form_data,
             follow=True,
         )
-        self.assertEqual(self.comment.text, form_data["text"])
+        comment = Comment.objects.first()
         self.assertEqual(Comment.objects.count(), comments + 1)
+        self.assertEqual(comment.text, form_data["text"])
+        self.assertEqual(comment.author, self.user)
+        self.assertEqual(comment.post_id, self.post.id)
 
     def test_not_auth_user_can_add_comments(self):
         """Невторизированный пользователь не может добавлять комментарии"""
+        comment = Comment.objects.count()
         form_data = {"text": "коммент"}
         self.anonymous_client.post(
             reverse("add_comment", args=[self.user, self.post.id]),
             data=form_data,
             follow=True,
         )
-        comment = Comment.objects.first()
-        self.assertNotEqual(comment.text, form_data["text"])
+
+        self.assertEqual(comment, Comment.objects.count())
 
     def test_auth_user_can_follow_users(self):
-        """Пользователь может подписывать на юзера"""
+        """Пользователь может подписываться на юзера"""
         self.authorized_client.post(
-            reverse("profile_follow", args=[self.user2]),
+            reverse("profile_follow", args=[self.another_user]),
             follow=True,
         )
+        follow = Follow.objects.first()
         self.assertEqual(Follow.objects.count(), 1)
+        self.assertEqual(follow.author, self.another_user)
+        self.assertEqual(follow.user, self.user)
 
     def test_auth_user_can_unfollow_users(self):
-        """Пользователь может отписывать от юзера"""
-        self.authorized_client.post(
-            reverse("profile_follow", args=[self.user2]),
-            follow=True,
+        """Пользователь может отписываться от юзера"""
+        Follow.objects.create(
+            user=self.user,
+            author=self.another_user,
         )
         self.assertEqual(Follow.objects.count(), 1)
         self.authorized_client.post(
-            reverse("profile_unfollow", args=[self.user2]),
+            reverse("profile_unfollow", args=[self.another_user]),
             follow=True,
         )
         self.assertEqual(Follow.objects.count(), 0)
 
     def test_comments_delete(self):
         """Комментарий удаляется"""
-        comment = Comment.objects.first()
+        comment = Comment.objects.create(
+            text="comment",
+            author=self.user,
+            post=self.post,
+        )
         self.authorized_client.post(
             reverse(
                 "del_comment",
@@ -158,3 +189,90 @@ class PostPagesTests(TestSettings):
             follow=True,
         )
         self.assertEqual(Comment.objects.first(), None)
+
+    def test_new_post_created_on_page_followers(self):
+        """Записи фолловеров.
+
+        Новая запись пользователя появляется в ленте тех,
+        кто на него подписан."""
+        self.follow = Follow.objects.create(
+            user=self.user,
+            author=self.another_user,
+        )
+        form_data = {
+            "text": "Новый пост",
+            "group": self.group.id,
+            "author": self.another_user,
+        }
+        self.authorized_client2.post(
+            reverse("new_post"),
+            data=form_data,
+            follow=True,
+        )
+        first_post = Post.objects.first()
+        response = self.authorized_client.get(reverse("follow_index"))
+        post = response.context["page"].object_list[0]
+        self.assertEqual(post, first_post)
+
+    def test_new_post_dont_show_on_unfollowers_page(self):
+        """Записи фолловеров.
+
+        Новая запись пользователя не появляется в ленте тех,
+        кто НЕ подписан на него"""
+        self.follow = Follow.objects.create(
+            user=self.user,
+            author=self.another_user,
+        )
+        form_data = {
+            "text": "Новый пост",
+            "group": self.group.id,
+            "author": self.another_user,
+        }
+        self.authorized_client2.post(
+            reverse("new_post"),
+            data=form_data,
+            follow=True,
+        )
+        response = self.authorized_client2.get(reverse("follow_index"))
+        posts = response.context["page"].object_list
+        self.assertEqual(len(posts), 0)
+
+    def test_cache(self):
+        """Тест кэширования индекса"""
+        client = self.authorized_client
+        response = client.get(reverse("index"))
+        content = response.content
+        Post.objects.all().delete()
+        response = client.get(reverse("index"))
+        self.assertEqual(content, response.content, "Кеширование не работает")
+        cache.clear()
+        response = client.get(reverse("index"))
+        self.assertNotEqual(
+            content, response.content, "Кеширование неисправно"
+        )
+
+    def test_img_on_pages_in_context(self):
+        """При выводе поста с картинкой изображение передается в словаре
+        context на: главную страницу, страницу профайла, страницу группы
+        и на отдельную страницу поста
+        """
+        urls = {
+            "index": reverse("index"),
+            "profile": reverse("profile", args=[self.user]),
+            "group": reverse("group", args=[self.group.slug]),
+            "post": reverse("post", args=[self.user, self.post.id]),
+        }
+        for name, url in urls.items():
+            with self.subTest():
+                response = self.authorized_client.get(url)
+                if name == "post":
+                    self.assertEqual(
+                        response.context["post"].image, self.post.image
+                    )
+                    self.assertContains(response, "<img ")
+                else:
+                    self.assertEqual(
+                        response.context["paginator"].page(1)[0].image,
+                        self.post.image,
+                    )
+                    self.assertContains(response, "<img ")

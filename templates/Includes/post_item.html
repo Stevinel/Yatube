@@ -21,7 +21,7 @@
                 {{ post.text|linebreaksbr }}
             </p>
 
-            {% if post.comments.exists and is_post_page == False %} 
+            {% if post.comments.exists and not is_post_page %} 
                 <div> 
                     <a class="btn btn-sm btn-light" href="{% url 'post' post.author post.id %}" role="button"><span style="color:#0d56aa;"> 
                         {{ post.comments.count }} {{ post.comments.count|rupluralize:"комментарий,комментария,комментариев" }} 

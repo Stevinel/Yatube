@@ -6,15 +6,15 @@
 {{page.post.user_profile.username}}
 <main role="main" class="container"></main>
     <div class="row">
-        {% include "profile_info/info.html" with author=user_profile %}
+        {% include "includes/info.html" with author=user_profile %}
         <div class="col-md-9"> 
             {% for post in page %}
-                {% include "post_items/post_item.html" with post=post %}
+                {% include "includes/post_item.html" with post=post %}
             {% endfor %}
         </div>
 
         {% if page.has_other_pages %}
-            {% include "paginator.html" with items=page paginator=paginator%}
+            {% include "includes/paginator.html" with items=page paginator=paginator%}
         {% endif %}
     </div>
 </main> 

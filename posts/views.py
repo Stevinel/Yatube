@@ -60,14 +60,10 @@ def profile(request, username):
             user=request.user, author=user_profile
         ).exists()
     )
-    followers = user_profile.following.count()
-    following = user_profile.follower.count()
     context = {
         "page": page,
         "paginator": paginator,
         "user_profile": user_profile,
-        "followers": followers,
-        "following": following,
         "is_following": is_following,
     }
     return render(request, "profile.html", context)
@@ -78,17 +74,7 @@ def post_view(request, username, post_id):
     user_profile = get_object_or_404(User, username=username)
     post = get_object_or_404(Post, id=post_id, author__username=username)
     comments = post.comments.all()
-    followers = user_profile.follower.count()
-    following = user_profile.following.count()
-
     form = CommentForm(request.POST or None)
-    if form.is_valid():
-        comment = form.save(commit=False)
-        comment.author = request.user
-        comment.post = post
-        comment.save()
-        return redirect("post", username, post_id)
-
     return render(
         request,
         "post.html",
@@ -96,8 +82,6 @@ def post_view(request, username, post_id):
             "form": form,
             "post": post,
             "comments": comments,
-            "followers": followers,
-            "following": following,
             "user_profile": user_profile,
         },
     )
@@ -116,7 +100,6 @@ def post_edit(request, username, post_id):
     )
 
     if form.is_valid():
-        post = form.save(commit=False)
         post.save()
         return redirect("post", username, post_id)
 
@@ -196,9 +179,7 @@ def profile_follow(request, username):
 @login_required
 def profile_unfollow(request, username):
     """Функция отписки от автора"""
-    user = get_object_or_404(User, username=username)
-    follow, created = Follow.objects.get_or_create(
-        user=request.user, author=user
-    )
-    follow.delete()
+    user = request.user
+    author = get_object_or_404(User, username=username)
+    Follow.objects.filter(user=user, author=author).delete()
     return redirect("profile", username)

@@ -3,7 +3,7 @@
 {% block header %}Пост{{ post.author.get_full_name }}{% endblock %}
 {% block content %}
 
-{% include "post_items/post_item.html" with post=post is_post_page=True %}
-{% include "comments.html" with post=post comments=comments.post.all %}
+{% include "includes/post_item.html" with post=post is_post_page=True %}
+{% include "includes/comments.html" with post=post comments=comments.post.all %}
 
 {% endblock %} 

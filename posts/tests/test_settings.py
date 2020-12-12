@@ -3,7 +3,7 @@ from django.contrib.sites.models import Site
 from django.core.cache import cache
 from django.test import Client, TestCase
 
-from posts.models import Comment, Group, Post, User
+from posts.models import Group, Post, User
 
 
 class TestSettings(TestCase):
@@ -18,7 +18,7 @@ class TestSettings(TestCase):
             first_name="Stan",
             last_name="Voronov",
         )
-        cls.user2 = User.objects.create(
+        cls.another_user = User.objects.create(
             username="nastyankins",
             first_name="Анастасия",
             last_name="Кузьмичёва",
@@ -67,13 +67,7 @@ class TestSettings(TestCase):
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
         self.authorized_client2 = Client()
-        self.authorized_client2.force_login(self.user2)
+        self.authorized_client2.force_login(self.another_user)
         self.not_author = Client()
         self.not_author.force_login(self.user_not_author)
         cache.clear()
-
-        self.comment = Comment.objects.create(
-            text="comment",
-            author=self.user,
-            post=self.post,
-        )

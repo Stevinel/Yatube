@@ -2,12 +2,11 @@ import shutil
 import tempfile
 
 from django.conf import settings
-from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test.utils import override_settings
 from django.urls import reverse
 
-from posts.models import Follow, Post
+from posts.models import Post
 from posts.tests.test_settings import TestSettings
 
 
@@ -46,7 +45,6 @@ class PostCreateFormTest(TestSettings):
         self.assertEqual(post.text, form_data["text"])
         self.assertEqual(post.author, self.user)
         self.assertEqual(post.group.id, form_data["group"])
-        self.assertNotEqual(post.group.id, self.group2)
         self.assertIsNotNone(response.context["post"].image)
 
     def test_edit_post(self):
@@ -64,68 +62,3 @@ class PostCreateFormTest(TestSettings):
         self.assertEqual(post.text, form_data["text"])
         self.assertEqual(post.author, self.user)
         self.assertEqual(post.group.id, form_data["group"])
-
-    def test_new_post_created_on_page_followers(self):
-        """Записи фолловеров.
-
-        Новая запись пользователя появляется в ленте тех,
-        кто на него подписан."""
-        self.follow = Follow.objects.create(
-            user=self.user,
-            author=self.user2,
-        )
-        posts_count = Post.objects.count()
-        form_data = {
-            "text": "Новый пост",
-            "group": self.group.id,
-            "author": self.user2,
-        }
-        self.authorized_client2.post(
-            reverse("new_post"),
-            data=form_data,
-            follow=True,
-        )
-        self.assertEqual(Post.objects.count(), posts_count + 1)
-        first_post = Post.objects.first()
-        response = self.authorized_client.get(reverse("follow_index"))
-        post = response.context["page"].object_list[0]
-        self.assertEqual(post, first_post)
-
-    def test_new_post_dont_show_on_unfollowers_page(self):
-        """Записи фолловеров.
-
-        Новая запись пользователя не появляется в ленте тех,
-        кто НЕ подписан на него"""
-        self.follow = Follow.objects.create(
-            user=self.user,
-            author=self.user2,
-        )
-        posts_count = Post.objects.count()
-        form_data = {
-            "text": "Новый пост",
-            "group": self.group.id,
-            "author": self.user2,
-        }
-        self.authorized_client2.post(
-            reverse("new_post"),
-            data=form_data,
-            follow=True,
-        )
-        self.assertEqual(Post.objects.count(), posts_count + 1)
-        response = self.authorized_client2.get(reverse("follow_index"))
-        posts = response.context["page"].object_list
-        self.assertEqual(len(posts), 0)
-
-    def test_cache(self):
-        """Тест кэширования индекса"""
-        client = self.authorized_client
-        response = client.get(reverse("index"))
-        content = response.content
-        Post.objects.all().delete()
-        response = client.get(reverse("index"))
-        self.assertEqual(content, response.content, "Кеширование не работает")
-        cache.clear()
-        response = client.get(reverse("index"))
-        self.assertNotEqual(
-            content, response.content, "Кеширование неисправно"
-        )
