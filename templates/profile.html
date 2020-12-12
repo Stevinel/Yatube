@@ -3,7 +3,6 @@
 {% block header %}Профайл пользователя {{ page.0.author.get_full_name }}{% endblock %}
 {% block content %}
 
-{{page.post.user_profile.username}}
 <main role="main" class="container"></main>
     <div class="row">
         {% include "includes/info.html" with author=user_profile %}

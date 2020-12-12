@@ -3,7 +3,12 @@
 {% block header %}Пост{{ post.author.get_full_name }}{% endblock %}
 {% block content %}
 
-{% include "includes/post_item.html" with post=post is_post_page=True %}
-{% include "includes/comments.html" with post=post comments=comments.post.all %}
+<main role="main" class="container"></main>
+    <div class="col-md-12"> 
+        {% include "includes/post_item.html" with post=post is_post_page=True %}
+        {% include "includes/comments.html" with comments=comments.post.all %}
+    </div>
+</main>
+
 
 {% endblock %} 
