@@ -40,7 +40,7 @@ class TestSettings(TestCase):
 
         for number in range(2, 13):
             Post.objects.create(
-                id=number, text="Some text", author=cls.user, group=cls.group
+                text="Some text", author=cls.user, group=cls.group
             )
         Post.objects.create(
             id=14, text="Some text", author=cls.user, group=cls.group2

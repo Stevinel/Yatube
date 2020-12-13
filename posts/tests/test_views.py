@@ -85,7 +85,7 @@ class PostPagesTests(TestSettings):
         )
         self.assertEqual(response.context["page"][0].author, self.user)
         self.assertIn("page", response.context)
-        self.assertIn("user_profile", response.context)
+        self.assertIn("author", response.context)
         self.assertEqual(
             response.context["paginator"].page(2).object_list.count(), 4
         )
@@ -113,42 +113,6 @@ class PostPagesTests(TestSettings):
             response = self.anonymous_client.get(url)
             with self.subTest():
                 self.assertEqual(response.status_code, 200)
-
-    def test_follow_page_show_correct_context(self):
-        """Шаблон new сформирован с правильным контекстом."""
-        response = self.authorized_client.get(reverse("follow_index"))
-        form_fields = {"text": forms.fields.CharField}
-        for name, expected in form_fields.items():
-            with self.subTest(name=name):
-                field_filled = response.context.get("form").fields.get(name)
-                self.assertIsInstance(field_filled, expected)
-
-    def test_only_auth_user_can_add_comments(self):
-        """Авторизированный пользователь может добавлять комментарии"""
-        comments = Comment.objects.count()
-        form_data = {"text": "Комментик"}
-        self.authorized_client.post(
-            reverse("add_comment", args=[self.user, self.post.id]),
-            data=form_data,
-            follow=True,
-        )
-        comment = Comment.objects.first()
-        self.assertEqual(Comment.objects.count(), comments + 1)
-        self.assertEqual(comment.text, form_data["text"])
-        self.assertEqual(comment.author, self.user)
-        self.assertEqual(comment.post_id, self.post.id)
-
-    def test_not_auth_user_can_add_comments(self):
-        """Невторизированный пользователь не может добавлять комментарии"""
-        comment = Comment.objects.count()
-        form_data = {"text": "коммент"}
-        self.anonymous_client.post(
-            reverse("add_comment", args=[self.user, self.post.id]),
-            data=form_data,
-            follow=True,
-        )
-
-        self.assertEqual(comment, Comment.objects.count())
 
     def test_auth_user_can_follow_users(self):
         """Пользователь может подписываться на юзера"""
@@ -188,7 +152,7 @@ class PostPagesTests(TestSettings):
             ),
             follow=True,
         )
-        self.assertEqual(Comment.objects.first(), None)
+        self.assertEqual(Comment.objects.count(), 0)
 
     def test_new_post_created_on_page_followers(self):
         """Записи фолловеров.
@@ -265,14 +229,13 @@ class PostPagesTests(TestSettings):
         for name, url in urls.items():
             with self.subTest():
                 response = self.authorized_client.get(url)
-                if name == "post":
-                    self.assertEqual(
-                        response.context["post"].image, self.post.image
-                    )
-                    self.assertContains(response, "<img ")
+                self.assertContains(response, "<img ")
+                page = response.context.get("page")
+                if page is not None:
+                    image = page[0].image
                 else:
-                    self.assertEqual(
-                        response.context["paginator"].page(1)[0].image,
-                        self.post.image,
-                    )
-                    self.assertContains(response, "<img ")
+                    image = response.context["post"].image
+                self.assertEqual( 
+                    image,
+                    self.post.image)
+                    

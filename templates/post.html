@@ -1,16 +1,19 @@
 {% extends "base.html" %}
-{% block title %}{{ post.author.get_full_name }}{% endblock %}
-{% block header %}Пост{{ post.author.get_full_name }}{% endblock %}
+{% block title %}Пост автора{% endblock %}
+{% block header %}Отдельный пост{% endblock %}
 {% block content %}
 
 <main role="main" class="container">
     <div class="row">
-        <div class="col-md-12">
-            {% include "includes/post_item.html" with post=post is_post_page=True %}
-            {% include "includes/comments.html" with comments=comments.post.all %}
+        {% include "includes/info.html" with author=post.author %}
+        <div class="col-md-9"> 
+                {% include "includes/post_item.html" with post=post is_post_page=True %}
+                {% include "includes/comments.html" with comments=comments.post.all %}
         </div>
+
+        {% if page.has_other_pages %}
+            {% include "includes/paginator.html" with items=page paginator=paginator%}
+        {% endif %}
     </div>
-</main>
-
-
+</main> 
 {% endblock %} 

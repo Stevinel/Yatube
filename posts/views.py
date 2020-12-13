@@ -49,21 +49,21 @@ def new_post(request):
 
 def profile(request, username):
     """Функция страницы профиля"""
-    user_profile = get_object_or_404(User, username=username)
-    post = user_profile.posts.all()
+    author = get_object_or_404(User, username=username)
+    post = author.posts.all()
     paginator = Paginator(post, 10)
     page_number = request.GET.get("page")
     page = paginator.get_page(page_number)
     is_following = (
         request.user.is_authenticated
         and Follow.objects.filter(
-            user=request.user, author=user_profile
+            user=request.user, author=author
         ).exists()
     )
     context = {
         "page": page,
         "paginator": paginator,
-        "user_profile": user_profile,
+        "author": author,
         "is_following": is_following,
     }
     return render(request, "profile.html", context)
@@ -71,10 +71,9 @@ def profile(request, username):
 
 def post_view(request, username, post_id):
     """Функция страницы поста"""
-    user_profile = get_object_or_404(User, username=username)
     post = get_object_or_404(Post, id=post_id, author__username=username)
     comments = post.comments.all()
-    form = CommentForm(request.POST or None)
+    form = CommentForm()
     return render(
         request,
         "post.html",
@@ -82,7 +81,6 @@ def post_view(request, username, post_id):
             "form": form,
             "post": post,
             "comments": comments,
-            "user_profile": user_profile,
         },
     )
 
@@ -136,8 +134,7 @@ def add_comment(request, username, post_id):
 @login_required
 def delete_comment(request, username, post_id, comment_id):
     """Функция удаления комментария юзером"""
-    post = get_object_or_404(Post, id=post_id, author__username=username)
-    comment = get_object_or_404(Comment, pk=comment_id, post=post)
+    comment = get_object_or_404(Comment, pk=comment_id, post=post_id)
     if comment.author == request.user:
         comment.delete()
     return redirect("post", username, post_id)
@@ -181,5 +178,8 @@ def profile_unfollow(request, username):
     """Функция отписки от автора"""
     user = request.user
     author = get_object_or_404(User, username=username)
-    Follow.objects.filter(user=user, author=author).delete()
+    follow = Follow.objects.filter(user=user, author=author)
+    if follow.exists():
+        follow.delete()
+
     return redirect("profile", username)

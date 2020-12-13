@@ -1,11 +1,11 @@
 {% extends "base.html" %}
-{% block title %}{{ page.0.author.get_full_name }}{% endblock %}
-{% block header %}Профайл пользователя {{ page.0.author.get_full_name }}{% endblock %}
+{% block title %}{{ author.get_full_name }}{% endblock %}
+{% block header %}Профайл пользователя {{ author.get_full_name }}{% endblock %}
 {% block content %}
 
 <main role="main" class="container">
     <div class="row">
-        {% include "includes/info.html" with author=user_profile %}
+        {% include "includes/info.html" with author=author profile=True %}
         <div class="col-md-9"> 
             {% for post in page %}
                 {% include "includes/post_item.html" with post=post %}

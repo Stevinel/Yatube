@@ -33,7 +33,7 @@
             <div class="d-flex justify-content-between align-items-center"> 
                 <div class="btn-group"> 
 
-                    {% if is_post_page != True %} 
+                    {% if not is_post_page %} 
                         <a class="btn btn-sm btn-light" href="{% url 'post' post.author post.id %}" role="button"> 
                             Добавить комментарий 
                         </a>&thinsp; 

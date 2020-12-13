@@ -6,7 +6,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test.utils import override_settings
 from django.urls import reverse
 
-from posts.models import Post
+from posts.models import Comment, Post
 from posts.tests.test_settings import TestSettings
 
 
@@ -62,3 +62,30 @@ class PostCreateFormTest(TestSettings):
         self.assertEqual(post.text, form_data["text"])
         self.assertEqual(post.author, self.user)
         self.assertEqual(post.group.id, form_data["group"])
+
+    def test_only_auth_user_can_add_comments(self):
+        """Авторизированный пользователь может добавлять комментарии"""
+        comments_count = Comment.objects.count()
+        form_data = {"text": "Комментик"}
+        self.authorized_client.post(
+            reverse("add_comment", args=[self.user, self.post.id]),
+            data=form_data,
+            follow=True,
+        )
+        comment = Comment.objects.first()
+        self.assertEqual(Comment.objects.count(), comments_count + 1)
+        self.assertEqual(comment.text, form_data["text"])
+        self.assertEqual(comment.author, self.user)
+        self.assertEqual(comment.post, self.post)
+
+    def test_not_auth_user_can_add_comments(self):
+        """Невторизированный пользователь не может добавлять комментарии"""
+        comments_count = Comment.objects.count()
+        form_data = {"text": "коммент"}
+        self.anonymous_client.post(
+            reverse("add_comment", args=[self.user, self.post.id]),
+            data=form_data,
+            follow=True,
+        )
+
+        self.assertEqual(comments_count, Comment.objects.count())
