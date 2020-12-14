@@ -38,12 +38,12 @@ class TestSettings(TestCase):
             group=cls.group,
         )
 
-        for number in range(2, 13):
+        for number in range(11):
             Post.objects.create(
                 text="Some text", author=cls.user, group=cls.group
             )
         Post.objects.create(
-            id=14, text="Some text", author=cls.user, group=cls.group2
+            text="Some text", author=cls.user, group=cls.group2
         )
 
         site = Site.objects.get(id=1)

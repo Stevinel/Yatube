@@ -51,7 +51,7 @@ class PostPagesTests(TestSettings):
         post = response.context["page"][0]
         self.assertEqual(post, self.post)
         self.assertEqual(
-            response.context["paginator"].page(1).object_list.count(), 10
+            len(response.context["paginator"].page(1)), 10
         )
 
     def test_group_page_show_correct_context(self):
@@ -62,7 +62,7 @@ class PostPagesTests(TestSettings):
         self.assertEqual(response.context["group"], self.group)
         self.assertIn("page", response.context)
         self.assertEqual(
-            response.context["paginator"].page(1).object_list.count(), 10
+            len(response.context["paginator"].page(1)), 10
         )
 
     def test_new_page_show_correct_context(self):
@@ -159,7 +159,7 @@ class PostPagesTests(TestSettings):
 
         Новая запись пользователя появляется в ленте тех,
         кто на него подписан."""
-        self.follow = Follow.objects.create(
+        Follow.objects.create(
             user=self.user,
             author=self.another_user,
         )
@@ -183,7 +183,7 @@ class PostPagesTests(TestSettings):
 
         Новая запись пользователя не появляется в ленте тех,
         кто НЕ подписан на него"""
-        self.follow = Follow.objects.create(
+        Follow.objects.create(
             user=self.user,
             author=self.another_user,
         )
@@ -235,7 +235,5 @@ class PostPagesTests(TestSettings):
                     image = page[0].image
                 else:
                     image = response.context["post"].image
-                self.assertEqual( 
-                    image,
-                    self.post.image)
+                self.assertEqual( image, self.post.image)
                     
