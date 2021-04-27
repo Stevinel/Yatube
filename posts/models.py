@@ -1,7 +1,19 @@
 from django.contrib.auth import get_user_model
 from django.db import models
+from django.db.models.expressions import Exists, OuterRef
 
 User = get_user_model()
+
+
+class PostQuerySet(models.Manager):
+    def annotate_liked(self, user):
+        return self.annotate(
+            liked=Exists(
+                Like.objects.filter(user=user.id, post_id=OuterRef("id")).only(
+                    "id",
+                ),
+            ),
+        )
 
 
 class Post(models.Model):
@@ -30,6 +42,8 @@ class Post(models.Model):
         null=True,
     )
 
+    objects = PostQuerySet()
+
     class Meta:
         ordering = ["-pub_date"]
         verbose_name = "Пост"
@@ -48,11 +62,11 @@ class Group(models.Model):
     slug = models.SlugField(
         max_length=256,
         unique=True,
-        verbose_name="Слаг",
-        help_text="Адрес для страницы с группой",
+        verbose_name="Адрес",
+        help_text="Адрес для группы. Например: 'novaya-gruppa'",
     )
-    description = models.TextField(
-        verbose_name="Описание", help_text="Описание группы"
+    description = models.CharField(
+        max_length=200, verbose_name="Описание", help_text="Описание группы"
     )
 
     class Meta:
@@ -82,13 +96,16 @@ class Comment(models.Model):
     )
     text = models.TextField(max_length=1000)
     created = models.DateTimeField(auto_now_add=True)
+    image = models.ImageField(
+    verbose_name="Добавить фотографию",
+    upload_to="comments/",
+    blank=True,
+    null=True,
+    )
 
     class Meta:
         verbose_name = "Комментарий"
         verbose_name_plural = "Комментарии"
-
-    def __str__(self):
-        return self.post
 
 
 class Follow(models.Model):
@@ -101,7 +118,7 @@ class Follow(models.Model):
     )
     author = models.ForeignKey(
         User,
-        related_name="following",
+        related_name="following",    
         on_delete=models.CASCADE,
         blank=True,
         null=True,
@@ -113,5 +130,23 @@ class Follow(models.Model):
         constraints = [
             models.UniqueConstraint(
                 fields=["user", "author"], name="unique_follow"
+            )
+        ]
+
+
+class Like(models.Model):
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="liker"
+    )
+    post = models.ForeignKey(
+        Post, on_delete=models.CASCADE, related_name="likes"
+    )
+
+    class Meta:
+        verbose_name = "Лайк"
+        verbose_name_plural = "Лайки"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "post"], name="unique_like"
             )
         ]

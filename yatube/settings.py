@@ -28,8 +28,8 @@ DEBUG = True
 ALLOWED_HOSTS = [
     "localhost",
     "127.0.0.1",
-    "[::1]",
-    "testserver",
+    "project-blog.tk",
+    "45.156.24.99",
 ] 
 
 
@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.sites',
     'django.contrib.flatpages',
+    'debug_toolbar',
 ]
 
 MIDDLEWARE = [
@@ -153,4 +154,21 @@ CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
     }
+} 
+
+INTERNAL_IPS = [
+    "127.0.0.1",
+] 
+
+THUMBNAILS_SIZE = "1800x1400"
+THUMBNAILS_SUBDIR = "thumbnails"
+
+REST_FRAMEWORK = {        
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated', 
+    ],
+
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+    ]
 } 

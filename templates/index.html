@@ -3,15 +3,23 @@
 {% block header %}Последние обновления на сайте{% endblock %}
 {% block content %}
 
-    <h2>Последние обновления на сайте:</h2><br>
-    {% include "includes/menu.html" with index=True %}
-        {% for post in page %}
-            {% include "includes/post_item.html" with post=post %}
-        {% endfor %}
+
+<main role="main" class="container">
+    <div class="row">
+        {% include "includes/menu.html"  %}
+        <div class="col-md-9"> 
+            {% for post in page %}
+                {% include "includes/post_item.html" with post=post %}
+            {% endfor %}
+        </div>
+        <div style="width: 50%; margin: 0 auto; text-align: center;">
         {% if page.has_other_pages %}
             {% include "includes/paginator.html" with items=page paginator=paginator%}
         {% endif %}
+        </div>
+
+    </div>
+
+</main> 
 
 {% endblock %} 
-
-

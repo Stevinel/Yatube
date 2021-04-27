@@ -6,6 +6,7 @@
       {% else %}
           <li class="page-item disabled"><a class="page-link" href="#" tabindex="-1" aria-disabled="true">&laquo; Предыдущая</a></li>
       {% endif %}
+      
       {% for i in paginator.page_range %}
           {% if items.number == i %}
           <li class="page-item active"><span class="page-link">{{ i }} <span class="sr-only">(текущая)</span></span></li>

@@ -1,15 +1,30 @@
-<nav class="navbar navbar-light" style="background-color: #5181b8;">
-    <a class="navbar-brand" href="/"><span style="color:rgb(255, 255, 255)">в YA</span><span style="color:rgb(255, 255, 255)">tube</span></a>
-    <nav class="my-2 my-md-0 mr-md-3">
-        {% if user.is_authenticated %}
-        <span style="color:rgb(45, 56, 91)">Пользователь: {{ user.username }}</span>
-        
-        <a class="p-2 text-dark" href="{% url 'new_post' %}"><span style="color:rgb(255, 255, 255)">Новая запись</span></a>
-        <a class="p-2 text-dark" href="{% url 'password_change' %}"><span style="color:rgb(255, 255, 255)">Изменить пароль</span></a>
-        <a class="p-2 text-dark" href="{% url 'logout' %}"><span style="color:rgb(255, 255, 255)">Выйти</span></a>        
-        {% else %}
-        <a class="p-2 text-dark" href="{% url 'login' %}"><span style="color:rgb(255, 255, 255)">Войти</span></a> |
-        <a class="p-2 text-dark" href="{% url 'signup' %}"><span style="color:rgb(255, 255, 255)">Регистрация</span></a>
-        {% endif %}
-    </nav>
-</nav> 
+<nav class="navbar navbar-light" style="background-color: #22252b;">
+    <b><a class="navbar-brand" href="/"><span style="color:rgb(255, 255, 255)">STUDY Project</span></a></b>
+    <form class="form-inline mt-2 mt-md-0" action="{% url 'index' %}">
+        <input class="form-control mr-sm-1" type="text" placeholder="Поиск по тексту" aria-label="Search" name="search">
+        <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Поиск</button>
+      </form>
+    <div class="my-2 my-md-0 mr-md-3">
+        <div class="dropdown">
+            <button class="btn btn-secondary dropdown-toggle btn-info" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            {% if user.is_authenticated %}
+            {{ user.get_full_name}}
+            {% else %}
+            Настройки
+            {% endif %}
+            </button>
+            <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+            {% if user.is_authenticated %}
+                <a class="p-2 text-dark" href="{% url 'profile' user.username %}">Мой профиль</a><br>
+                <a class="p-2 text-dark" href="{% url 'new_post' %}">Создать запись</a><br>
+                <a class="p-2 text-dark" href="{% url 'new_group' %}">Создать группу</a><br>
+                <a class="p-2 text-dark" href="{% url 'password_change' %}">Изменить пароль</a><br>
+                <a class="p-2 text-dark" href="{% url 'logout' %}">Выйти</a><br>
+            {% else %}
+                <a class="p-2 text-dark" href="{% url 'login' %}">Войти</a><br>
+                <a class="p-2 text-dark" href="{% url 'signup' %}">Регистрация</a><br>
+            {% endif %}
+            </div>
+        </div>
+    </div>
+</nav>

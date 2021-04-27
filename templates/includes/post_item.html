@@ -1,14 +1,17 @@
+{% load static %}
 {% load comments_filter %}
+
 <div class="card mb-3 mt-1 shadow-sm">
     {% load thumbnail %}
-    {% thumbnail post.image "960x339" crop="center" upscale=True as im %}
-    <img class="card-img" src="{{ im.url }}" />
+    {% thumbnail post.image "960x339" crop="center" upscale=True as im  %}
+    <img class="card-img" src="{{ im.url }}"  />
     {% endthumbnail %}
+
 
     <div class="card-body">
         <p class="card-text">
             <a name="post_{{ post.id }}" href="{% url 'profile' post.author.username %}">
-              <strong class="d-block text-gray-dark">{{ post.author }}</strong>
+              <strong class="d-block text-gray-dark">{{ post.author.get_full_name }}</strong>
             </a>
 
             {% if post.group %}
@@ -35,17 +38,25 @@
 
                     {% if not is_post_page %} 
                         <a class="btn btn-sm btn-light" href="{% url 'post' post.author post.id %}" role="button"> 
-                            Добавить комментарий 
+                            Добавить комментарий &thinsp; <img src="/static/comment.svg" /> 
                         </a>&thinsp; 
-                    {% endif %} 
+                    {% endif %}
+                        {% if post.liked %}    
+                            <a class="btn btn-sm btn-light" href="{% url 'post_unlike' post.author post.id %}" role="button">  <img src="/static/dislike.svg" /> {{ post.likes.count }}
+                            </a> </a>&thinsp;
+                        {% else %}
+                            <a class="btn btn-sm btn-light" href="{% url 'post_like' post.author post.id %}" role="button"> &thinsp; <img src="/static/like.svg" /> {{ post.likes.count }}
+                            </a>&thinsp;
+                        {% endif %} 
                     {% if user == post.author %} 
                         <a class="btn btn-sm btn-light" href="{% url 'post_edit' post.author.username post.id %}" role="button"> 
-                            Редактировать 
-                        </a> 
+                            <img src="/static/edit.svg" />
+                        </a></a>&thinsp;
+                        <a class="btn btn-sm btn-light" href="{% url 'post_delete' post.author post.id %}" role="button"> 
+                            <img src="/static/delete.svg" />
+                        </a>
                     {% endif %} 
                 </div> 
- 
-
                 <small class="text-muted">{{ post.pub_date|date:"d M Y" }}</small> 
             </div> 
             {% endif %} 

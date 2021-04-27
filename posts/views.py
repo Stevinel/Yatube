@@ -1,28 +1,40 @@
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from django.db.models.expressions import Exists, OuterRef
+
+from django.db.models.query import QuerySet
+from django.http.response import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.cache import cache_page
 
-from .forms import CommentForm, PostForm
-from .models import Comment, Follow, Group, Post, User
+from users.forms import CreationForm
+
+from .forms import CommentForm, GroupForm, PostForm, UserEditForm
+from .models import Comment, Follow, Group, Like, Post, User
 
 
-@cache_page(10)
+
+@cache_page(1)
 def index(request):
     """Функция главной страницы"""
-    post_list = Post.objects.all()
+    search_query = request.GET.get("search", "",)
+    if search_query:
+        post_list = Post.objects.filter(text__icontains=search_query)
+    else:
+        post_list = Post.objects.annotate_liked(request.user).all()
     paginator = Paginator(post_list, 10)
     page_number = request.GET.get("page")
     page = paginator.get_page(page_number)
     return render(
-        request, "index.html", {"page": page, "paginator": paginator}
+        request, "index.html", {"page": page, "paginator": paginator,}
     )
+
 
 
 def group_posts(request, slug):
     """Фунция страницы групп"""
     group = get_object_or_404(Group, slug=slug)
-    post_list = group.posts.all()
+    post_list = group.posts.annotate_liked(request.user).all()
     paginator = Paginator(post_list, 10)
     page_number = request.GET.get("page")
     page = paginator.get_page(page_number)
@@ -50,15 +62,13 @@ def new_post(request):
 def profile(request, username):
     """Функция страницы профиля"""
     author = get_object_or_404(User, username=username)
-    post = author.posts.all()
+    post = author.posts.annotate_liked(request.user).all()
     paginator = Paginator(post, 10)
     page_number = request.GET.get("page")
     page = paginator.get_page(page_number)
     is_following = (
         request.user.is_authenticated
-        and Follow.objects.filter(
-            user=request.user, author=author
-        ).exists()
+        and Follow.objects.filter(user=request.user, author=author).exists()
     )
     context = {
         "page": page,
@@ -71,7 +81,11 @@ def profile(request, username):
 
 def post_view(request, username, post_id):
     """Функция страницы поста"""
-    post = get_object_or_404(Post, id=post_id, author__username=username)
+    post = get_object_or_404(
+        Post.objects.annotate_liked(request.user),
+        id=post_id,
+        author__username=username,
+    )
     comments = post.comments.all()
     form = CommentForm()
     return render(
@@ -122,7 +136,7 @@ def server_error(request):
 def add_comment(request, username, post_id):
     """Функция добавления комментария"""
     post = get_object_or_404(Post, id=post_id, author__username=username)
-    form = CommentForm(request.POST or None)
+    form = CommentForm(request.POST or None, files=request.FILES or None)
     if form.is_valid():
         comment = form.save(commit=False)
         comment.author = request.user
@@ -134,7 +148,7 @@ def add_comment(request, username, post_id):
 @login_required
 def delete_comment(request, username, post_id, comment_id):
     """Функция удаления комментария юзером"""
-    comment = get_object_or_404(Comment, pk=comment_id, post=post_id)
+    comment = get_object_or_404(Comment, id=comment_id, post=post_id)
     if comment.author == request.user:
         comment.delete()
     return redirect("post", username, post_id)
@@ -143,7 +157,9 @@ def delete_comment(request, username, post_id, comment_id):
 @login_required
 def follow_index(request):
     """Функция страницы подписок"""
-    post_list = Post.objects.filter(author__following__user=request.user)
+    post_list = Post.objects.annotate_liked(request.user).filter(
+        author__following__user=request.user
+    )
     paginator = Paginator(post_list, 10)
     form = PostForm()
     page_number = request.GET.get("page")
@@ -181,5 +197,64 @@ def profile_unfollow(request, username):
     follow = Follow.objects.filter(user=user, author=author)
     if follow.exists():
         follow.delete()
-
     return redirect("profile", username)
+
+
+@login_required
+def post_delete(request, username, post_id):
+    """Функция удаления поста"""
+    post = get_object_or_404(Post, id=post_id)
+    if post.author == request.user:
+        post.delete()
+    return redirect("profile", username=username)
+
+
+@login_required
+def post_like(request, username, post_id):
+    """"Функция лайка"""
+    post = get_object_or_404(Post, author__username=username, id=post_id)
+    Like.objects.get_or_create(post=post, user=request.user)
+    return HttpResponseRedirect(request.META.get("HTTP_REFERER", "/"))
+
+
+@login_required
+def post_unlike(request, username, post_id):
+    """"Функция АНлайка"""
+    post = get_object_or_404(Post, author__username=username, id=post_id)
+    post.likes.filter(user=request.user).delete()
+    return HttpResponseRedirect(
+        request.META.get(
+            "HTTP_REFERER",
+            "/",
+        )
+    )
+
+
+@login_required
+def new_group(request):
+    """Функция страницы создания новой группы"""
+    form = GroupForm(request.POST or None)
+    if form.is_valid():
+        post = form.save(commit=False)
+        post.author = request.user
+        post.save()
+        return redirect("index")
+    context = {
+        "form": form,
+    }
+    return render(request, "new_group.html", context)
+
+
+@login_required
+def profile_edit(request, username):
+    """"Функция редактирования профиля"""
+    user_profile = get_object_or_404(User, username=username)
+    if request.user != user_profile:
+        return redirect('profile', username=user_profile.username)
+    form = UserEditForm(request.POST or None, instance=user_profile)
+    if form.is_valid():
+        form.save()
+        return redirect('profile', username=user_profile.username)
+    return render(request, 'profile_edit.html', {'form': form})
+
+    

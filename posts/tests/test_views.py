@@ -3,7 +3,7 @@ from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 
-from posts.models import Comment, Follow, Post
+from posts.models import Comment, Follow, Like, Post
 from posts.tests.test_settings import TestSettings
 
 
@@ -19,14 +19,14 @@ class PostPagesTests(TestSettings):
             b"\x02\x00\x01\x00\x00\x02\x02\x0C"
             b"\x0A\x00\x3B"
         )
-        cls.uploaded = SimpleUploadedFile(
+        uploaded = SimpleUploadedFile(
             name="small.gif", content=cls.small_gif, content_type="image/gif"
         )
         cls.post = Post.objects.create(
             text="Simple test text",
             author=cls.user,
             group=cls.group,
-            image=cls.uploaded,
+            image=uploaded,
         )
 
     def test_pages_uses_correct_template(self):
@@ -35,6 +35,7 @@ class PostPagesTests(TestSettings):
             reverse("index"): "index.html",
             reverse("group", args=[self.group.slug]): "group.html",
             reverse("new_post"): "new.html",
+            reverse("new_group"): "new_group.html",
             reverse(
                 "post_edit", args=[self.user.username, self.post.id]
             ): "new.html",
@@ -50,9 +51,7 @@ class PostPagesTests(TestSettings):
         response = self.authorized_client.get(reverse("index"))
         post = response.context["page"][0]
         self.assertEqual(post, self.post)
-        self.assertEqual(
-            len(response.context["paginator"].page(1)), 10
-        )
+        self.assertEqual(len(response.context["paginator"].page(1)), 10)
 
     def test_group_page_show_correct_context(self):
         """Шаблон group сформирован с правильным контекстом."""
@@ -61,9 +60,7 @@ class PostPagesTests(TestSettings):
         )
         self.assertEqual(response.context["group"], self.group)
         self.assertIn("page", response.context)
-        self.assertEqual(
-            len(response.context["paginator"].page(1)), 10
-        )
+        self.assertEqual(len(response.context["paginator"].page(1)), 10)
 
     def test_new_page_show_correct_context(self):
         """Шаблон new сформирован с правильным контекстом."""
@@ -72,6 +69,19 @@ class PostPagesTests(TestSettings):
             "text": forms.fields.CharField,
             "group": forms.fields.ChoiceField,
             "image": forms.fields.ImageField,
+        }
+        for name, expected in form_fields.items():
+            with self.subTest(name=name):
+                field_filled = response.context.get("form").fields.get(name)
+                self.assertIsInstance(field_filled, expected)
+
+    def test_new_group_page_show_correct_context(self):
+        """Шаблон new_group сформирован с правильным контекстом."""
+        response = self.authorized_client.get(reverse("new_group"))
+        form_fields = {
+            "title": forms.fields.CharField,
+            "slug": forms.fields.SlugField,
+            "description": forms.fields.CharField,
         }
         for name, expected in form_fields.items():
             with self.subTest(name=name):
@@ -154,6 +164,21 @@ class PostPagesTests(TestSettings):
         )
         self.assertEqual(Comment.objects.count(), 0)
 
+    def test_post_delete(self):
+        """Пост удаляется"""
+        post_count = Post.objects.count()
+        post = Post.objects.create(
+            text="Удали меня", author=self.user, group=self.group
+        )
+        self.authorized_client.post(
+            reverse(
+                "post_delete",
+                args=[self.user.username, post.id],
+            ),
+            follow=True,
+        )
+        self.assertEqual(Post.objects.count(), post_count)
+
     def test_new_post_created_on_page_followers(self):
         """Записи фолловеров.
 
@@ -235,5 +260,40 @@ class PostPagesTests(TestSettings):
                     image = page[0].image
                 else:
                     image = response.context["post"].image
-                self.assertEqual( image, self.post.image)
-                    
+                self.assertEqual(image, self.post.image)
+
+    def test_auth_user_can_add_like(self):
+        """Пользователь может ставить лайк"""
+        self.authorized_client.post(
+            reverse("post_like", args=[self.user, self.post.id]),
+            follow=True,
+        )
+        like = Like.objects.first()
+        self.assertEqual(Like.objects.count(), 1)
+        self.assertEqual(like.user, self.user)
+
+    def test_auth_user_can_delete_like(self):
+        """Пользователь может убирать лайк"""
+        Like.objects.create(
+            user=self.user,
+            post=self.post,
+        )
+        self.authorized_client.post(
+            reverse("post_unlike", args=[self.user, self.post.id]),
+            follow=True,
+        )
+        self.assertEqual(Like.objects.count(), 0)
+
+
+    def test_new_group_show_correct_context(self):
+        """Шаблон new_group сформирован с правильным контекстом."""
+        response = self.authorized_client.get(reverse("new_group"))
+        form_fields = {
+            "title": forms.fields.CharField,
+            "slug": forms.fields.SlugField,
+            "description": forms.fields.CharField,
+        }
+        for name, expected in form_fields.items():
+            with self.subTest(name=name):
+                field_filled = response.context.get("form").fields.get(name)
+                self.assertIsInstance(field_filled, expected)

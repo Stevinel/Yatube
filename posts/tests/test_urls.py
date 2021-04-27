@@ -24,6 +24,9 @@ class PostURLTests(TestSettings):
                 "del_comment",
                 args=[self.user.username, self.post.id, comment.id],
             ): 302,
+            reverse(
+                "post_delete", args=[self.user.username, self.post.id]
+            ): 302,
             reverse("profile_follow", args=[self.user.username]): 302,
             reverse("profile_unfollow", args=[self.user.username]): 302,
         }

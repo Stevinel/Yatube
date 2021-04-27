@@ -41,7 +41,7 @@ class GroupModelTest(TestSettings):
         group = GroupModelTest.group
         field_verboses = {
             "title": "Заголовок",
-            "slug": "Слаг",
+            "slug": "Адрес",
             "description": "Описание",
         }
         for value, expected in field_verboses.items():
@@ -55,7 +55,7 @@ class GroupModelTest(TestSettings):
         group = GroupModelTest.group
         field_help_text = {
             "title": "Название группы",
-            "slug": "Адрес для страницы с группой",
+            "slug": "Адрес для группы. Например: 'novaya-gruppa'",
             "description": "Описание группы",
         }
         for value, expected in field_help_text.items():

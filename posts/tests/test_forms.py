@@ -6,7 +6,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test.utils import override_settings
 from django.urls import reverse
 
-from posts.models import Comment, Post
+from posts.models import Comment, Group, Post
 from posts.tests.test_settings import TestSettings
 
 
@@ -89,3 +89,42 @@ class PostCreateFormTest(TestSettings):
         )
 
         self.assertEqual(comments_count, Comment.objects.count())
+
+
+def test_create_new_group(self):
+    """Новая группа создаётся успешно"""
+    group_count = Group.objects.count()
+
+    form_data = {
+        "title": "новая группа",
+        "slug": "новый слаг",
+        "description": "описание",
+    }
+    response = self.authorized_client.post(
+        reverse("new_group"), data=form_data, follow=True
+    )
+    group = Group.objects.first()
+    self.assertRedirects(response, reverse("index"))
+    self.assertEqual(Group.objects.count(), group_count + 1)
+    self.assertEqual(group.text, form_data["text"])
+    self.assertEqual(group.description, form_data["description"])
+    self.assertEqual(group.group.slug, form_data["group"])
+
+
+def test_edit_profile(self):
+      """Профиль редактируется"""
+      form_data = {
+          "first_name": "Cтэн",
+          "last_name": "Челов",
+          "username": 'Stevinelik'
+
+      }
+      self.authorized_client.post(
+          reverse("profile_edit", args=[self.user]),
+          data=form_data,
+          follow=True,
+      )
+
+      self.assertEqual(self.user.first_name, form_data["first_name"])
+      self.assertEqual(self.user.last_name, form_data["last_name"])
+      self.assertEqual(self.user.username, form_data["username"])

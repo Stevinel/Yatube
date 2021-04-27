@@ -1,0 +1,27 @@
+<div class="col-md-3 mb-3 mt-1">
+    <div class="card">
+        <div class="card-body">
+            <div class="h4">
+                Страница группы:
+            </div>
+            <div class="h5 text-muted">
+                <i class="fa fa-users"> {{ group }}</i>
+            </div>
+        </div>
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+                <div class="h4">
+                    Описание:
+                </div>
+                <div class="h6 text-muted">
+                    <i class="text-muted-small">{{ group.description }}</i>
+                </div>
+            </li>
+            <li class="list-group-item">
+                <div class="h6 text-muted">
+                    Кол-во постов: {{ group.posts.count }}
+                </div>
+            </li> 
+        </ul>
+    </div>
+</div>

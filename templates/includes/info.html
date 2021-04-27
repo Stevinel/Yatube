@@ -1,10 +1,10 @@
 <div class="col-md-3 mb-3 mt-1">
     <div class="card">
         <div class="card-body">
-            <div class="h2">
+            <div class="h3">
                 {{ author.get_full_name }}
             </div>
-            <div class="h3 text-muted">
+            <div class="h4 text-muted">
                 <i class="fas fa-user fa-sm"> {{ author.username }}</i>
             </div>
         </div>
@@ -19,7 +19,7 @@
                 {% else %}
                 <a class="d-block btn btn-sm btn-primary" 
                     href="{% url 'profile_follow' author.username %}" role="button">
-                        Подписаться 
+                        Подписаться &thinsp; 
                 </a>
                 {% endif %}     
             </div>
@@ -36,6 +36,13 @@
                 <div class="h6 text-muted">
                     Кол-во постов: {{ author.posts.count }} 
                 </div>
+                {% if author == request.user %}
+                <li class="list-group-item">
+                    <a class="d-block btn btn-sm btn-primary" 
+                    href="{% url 'profile_edit' author.username %}" role="button">
+                        Редактировать профиль 
+                </a>
+                {% endif %}
             </li> 
         </ul>
     </div>

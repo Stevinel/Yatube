@@ -12,9 +12,12 @@
             {% endfor %}
         </div>
 
-        {% if page.has_other_pages %}
-            {% include "includes/paginator.html" with items=page paginator=paginator%}
-        {% endif %}
+        <div style="width: 50%; margin: 0 auto; text-align: center;">
+            {% if page.has_other_pages %}
+                {% include "includes/paginator.html" with items=page paginator=paginator%}
+            {% endif %}
+            </div>
     </div>
 </main> 
+
 {% endblock %} 

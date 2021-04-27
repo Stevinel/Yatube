@@ -1,15 +1,23 @@
 {% extends "base.html" %}
-{% block title %}Последние обновления {% endblock %}
+{% block title %}Мои подписки {% endblock %}
 {% block header %}Последние обновления на сайте{% endblock %}
 {% block content %}
 
-    <h2>Ваши подписки:</h2><br>
-    {% include "includes/menu.html" with follow=True %}
-        {% for post in page %}
+<main role="main" class="container">
+    <div class="row">
+        {% include "includes/menu.html" with follow=True %}
+        <div class="col-md-9"> 
+            {% for post in page %}
             {% include "includes/post_item.html" with post=post %}
         {% endfor %}
-        {% if page.has_other_pages %}
-            {% include "includes/paginator.html" with items=page paginator=paginator%}
-        {% endif %}
+        </div>
+
+        <div style="width: 50%; margin: 0 auto; text-align: center;">
+            {% if page.has_other_pages %}
+                {% include "includes/paginator.html" with items=page paginator=paginator%}
+            {% endif %}
+        </div>
+    </div>
+</main> 
 
 {% endblock %} 
