@@ -1,7 +1,14 @@
-Project Yatube
-Stack of Django, bootstrap4, SQLite3
-A social network is a site where you can create your own page, publish posts, create groups. Users can visit the pages of other authors, subscribe to them and comment on their posts.
+# hw05_final
 
-Install:
-pip install -r requirements.txt
-python3 manage.py runserver
+Учебный проект от Яндекс.Практикум, представляет собой собственный блог с системой подписок и коментариев, проект покрыт тестами и прошел код ревью.
+
+##### **Стек технологий:**
+* Python3
+* Django
+* Pytest
+* Pillow
+* Bootstrap
+
+#### **Установка:**
+1. Выполнить `pip install -r requirements.txt`
+2. Выполнить `python3 manage.py runserver`
