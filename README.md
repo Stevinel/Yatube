@@ -13,5 +13,4 @@
 1. Выполнить `pip install -r requirements.txt`
 2. Выполнить `python3 manage.py runserver`
 
-
-![image](https://user-images.githubusercontent.com/72396348/136104698-0c3b46ca-9442-4ec6-88d8-a4a7844870a6.png)
+![image](https://user-images.githubusercontent.com/72396348/136104989-2595605b-a48d-47c2-8c8a-c91f6d4500f6.png)
