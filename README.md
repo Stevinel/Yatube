@@ -14,3 +14,4 @@
 2. Выполнить `python3 manage.py runserver`
 
 ![image](https://user-images.githubusercontent.com/72396348/136104989-2595605b-a48d-47c2-8c8a-c91f6d4500f6.png)
+![image](https://user-images.githubusercontent.com/72396348/136105107-1002e60d-70f5-4487-ba17-1fee9bb5f582.png)
